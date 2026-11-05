@@ -221,8 +221,8 @@
         WAPE (total absolute error / total riders) is the headline metric.</p>
       <p><strong>Uncertainty.</strong> 80% intervals come from out-of-sample residual quantiles per horizon. They are sized on a one-year inner hold-out
         before each refit (split-conformal style) and reported with their realised coverage.</p>
-      <p><strong>Limitations.</strong> Backtests use observed weather, so a live system would add weather-forecast error. Unscheduled events
-        (protests, closures on extreme-cold days) are the largest remaining misses.</p>
+      <p><strong>Limitations.</strong> Backtests use observed weather, so a live system would add weather-forecast error. Extreme-cold days,
+        when closures are announced at short notice, and rare holiday configurations are the largest remaining misses.</p>
       <p><strong>In the browser.</strong> The gradient-boosting model is exported tree by tree to JSON and evaluated in JavaScript for the planner.
         A unit test holds the JavaScript output to the scikit-learn predictions.</p>
     </div>
