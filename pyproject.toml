@@ -1,0 +1,13 @@
+[project]
+name = "transit-ridership-forecasting"
+version = "1.0.0"
+description = "Two-week daily ridership forecasts for the Chicago Transit Authority, with weather, holidays and events."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Aarush Mehta" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
