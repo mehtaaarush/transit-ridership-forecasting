@@ -1,12 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme-key="transit-theme" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chicago Transit Ridership Forecast</title>
   <meta name="description" content="Two-week daily ridership forecasts for the Chicago Transit Authority, built from 25 years of boardings, weather, holidays and events. Gradient boosting cuts forecast error by more than half versus planning baselines.">
   <meta name="author" content="Aarush Mehta">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1426'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='%23f2b01e' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0a1426">
+  <script>try{var r=document.documentElement,s=localStorage.getItem(r.dataset.themeKey);if(s==='light'||s==='dark')r.setAttribute('data-theme',s)}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="assets/theme.css">
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-cartesian-dist-min@2.35.2/plotly-cartesian.min.js" defer></script>
   <script src="assets/viz.js" defer></script>
@@ -14,6 +19,7 @@
   <script src="assets/app.js" defer></script>
 </head>
 <body>
+<div class="masthead">
 <header class="site-header wrap">
   <div class="top">
     <div>
@@ -31,6 +37,7 @@
     <a href="#methods">Methods</a>
   </div>
 </header>
+</div>
 
 <main class="wrap">
   <div class="hero">
