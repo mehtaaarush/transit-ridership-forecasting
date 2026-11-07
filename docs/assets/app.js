@@ -25,11 +25,11 @@
   const el = (id) => document.getElementById(id);
 
   /* ---------- Header, hero and KPI tiles ---------- */
-  el('meta-dates').textContent = 'Data ' + fmt.date(D.meta.data_start) + ' – ' + fmt.date(D.meta.data_end);
+  el('meta-dates').textContent = 'Data from ' + fmt.date(D.meta.data_start) + ' to ' + fmt.date(D.meta.data_end);
   const g = metric.gbm;
   el('hero-value').textContent = fmt.pct(g.wape, 1);
   el('hero-caption').textContent =
-    'WAPE over ' + fmt.int(g.n) + ' out-of-sample forecasts (' + fmt.month(D.backtest.start) + ' – ' + fmt.month(D.backtest.end) +
+    'WAPE over ' + fmt.int(g.n) + ' out-of-sample forecasts (' + fmt.month(D.backtest.start) + ' to ' + fmt.month(D.backtest.end) +
     '). That is ' + fmt.pct(1 - g.wape / metric.naive.wape, 0) + ' less error than a seasonal-naive forecast and ' +
     fmt.pct(1 - g.wape / metric.mean4.wape, 0) + ' less than the 4-week weekday average planners often use.';
 
@@ -45,7 +45,7 @@
   });
   Viz.tile('kpi-recovery', {
     label: 'Share of 2019 ridership', value: fmt.pct(K.recovery_12m_vs_2019, 0),
-    note: 'Weekdays ' + fmt.pct(K.recovery_by_day_type.weekday, 0) + ' · Sundays ' + fmt.pct(K.recovery_by_day_type.sunday_holiday, 0),
+    note: 'Weekdays ' + fmt.pct(K.recovery_by_day_type.weekday, 0) + ', Sundays ' + fmt.pct(K.recovery_by_day_type.sunday_holiday, 0),
   });
   Viz.tile('kpi-coverage', {
     label: '80% range hit rate', value: fmt.pct(g.coverage, 0),
@@ -68,7 +68,8 @@
         xaxis: Object.assign(Viz.crosshair(t), { type: 'date', hoverformat: 'Week of %b %-d, %Y' }),
         yaxis: { tickformat: '~s', rangemode: 'tozero' },
         shapes: [{ type: 'line', x0: covid, x1: covid, yref: 'paper', y0: 0, y1: 1, line: { color: t.baseline, width: 1 } }],
-        annotations: [{ x: covid, y: 1, yref: 'paper', text: 'Stay-at-home order', showarrow: false, xanchor: 'left', yanchor: 'top', xshift: 4, font: { color: t.text2, size: 11 } }],
+        // Two lines, so the label fits between the line and the latest week without widening the axis.
+        annotations: [{ x: covid, y: 1, yref: 'paper', text: 'Stay-at-home<br>order', align: 'left', showarrow: false, xanchor: 'left', yanchor: 'top', xshift: 4, font: { color: t.text2, size: 11 } }],
       },
     }),
     table: () => ({
@@ -151,9 +152,11 @@
       data: [{
         type: 'bar', orientation: 'h', y: HE.map((h) => h.name), x: HE.map((h) => h.effect),
         width: Viz.barWidth('chart-holidays', HE.length, true),
-        marker: { color: HE.map((h) => (h.effect < 0 ? t.divNeg : t.divPos)), cornerradius: 4 },
-        text: HE.map((h) => fmt.signedPct(h.effect, 0)), textposition: 'outside', cliponaxis: false,
-        textfont: { color: t.text2, size: 11 },
+        marker: { color: HE.map((h) => (h.effect < 0 ? t.divNeg : t.divPos)) },
+        // The two longest bars carry their label inside, so it never runs into the day names on a phone.
+        text: HE.map((h) => fmt.signedPct(h.effect, 0)), cliponaxis: false, constraintext: 'none',
+        textposition: HE.map((h) => (Math.abs(h.effect) >= 0.6 ? 'inside' : 'outside')), insidetextanchor: 'end',
+        textfont: { color: t.text2, size: 11 }, insidetextfont: { color: t.surface, size: 11 },
         customdata: HE.map((h) => h.days),
         hovertemplate: '<b>%{x:+.0%}</b> vs. a typical day<br>%{y} (%{customdata} days)<extra></extra>',
       }],
@@ -177,7 +180,7 @@
       data: [{
         type: 'bar', orientation: 'h', y: rows.map((r) => r.band), x: rows.map((r) => r.effect),
         width: Viz.barWidth('chart-weather-' + key, rows.length, true, 18),
-        marker: { color: rows.map((r) => (r.effect < 0 ? t.divNeg : t.divPos)), cornerradius: 4 },
+        marker: { color: rows.map((r) => (r.effect < 0 ? t.divNeg : t.divPos)) },
         text: rows.map((r) => fmt.signedPct(r.effect, 1)), textposition: 'outside', cliponaxis: false,
         textfont: { color: t.text2, size: 11 }, customdata: rows.map((r) => r.days),
         hovertemplate: '<b>%{x:+.1%}</b> vs. a typical day<br>%{y} (%{customdata} days)<extra></extra>',
@@ -185,7 +188,7 @@
       layout: {
         title: { text: title, x: 0, xanchor: 'left', font: { size: 13, color: t.text } },
         margin: { t: 34, r: 12 },
-        xaxis: { tickformat: '+.0%', showline: false, showgrid: true, zeroline: true, zerolinecolor: t.baseline, range: [-0.24, 0.08], dtick: 0.1 },
+        xaxis: { tickformat: '+.0%', showline: false, showgrid: true, zeroline: true, zerolinecolor: t.baseline, range: [-0.31, 0.08], dtick: 0.1 },
         yaxis: { autorange: 'reversed', showgrid: false, tickfont: { color: t.text2, size: 11 } },
       },
     };
@@ -218,8 +221,8 @@
     const cov = coverageOf(s, s.models[view.model]);
     const days = h === 1 ? '1 day' : h + ' days';
     el('backtest-title').textContent = name(view.model) + ': forecasts made ' + days + ' ahead vs. actual';
-    el('backtest-sub').textContent = fmt.date(s.date[0]) + ' – ' + fmt.date(s.date[s.date.length - 1]) + ', shaded band = 80% range';
-    el('backtest-readout').textContent = 'At ' + days + ' ahead: WAPE ' + fmt.pct(wape, 1) + ' · range covered ' + fmt.pct(cov, 0) + ' of days';
+    el('backtest-sub').textContent = fmt.date(s.date[0]) + ' to ' + fmt.date(s.date[s.date.length - 1]) + '; the shaded band is the 80% range';
+    el('backtest-readout').textContent = 'At ' + days + ' ahead: WAPE ' + fmt.pct(wape, 1) + ', and the range covered ' + fmt.pct(cov, 0) + ' of days';
   }
   const backtestCard = Viz.card('card-backtest', {
     build: (t) => {
@@ -235,7 +238,7 @@
             hovertemplate: '<b>%{y:,.0f}</b> actual<extra></extra>' },
           { x: s.date, y: m.pred, name: 'Forecast', type: 'scatter', mode: 'lines', line: { color: color, width: 2 },
             customdata: m.lo.map((lo, i) => [lo, m.hi[i]]),
-            hovertemplate: '<b>%{y:,.0f}</b> forecast (range %{customdata[0]:,.0f}–%{customdata[1]:,.0f})<extra></extra>' },
+            hovertemplate: '<b>%{y:,.0f}</b> forecast (range %{customdata[0]:,.0f} to %{customdata[1]:,.0f})<extra></extra>' },
         ],
         layout: {
           showlegend: true, hovermode: 'x unified', margin: { t: 34 }, legend: { traceorder: 'normal' },
@@ -264,7 +267,7 @@
         hovertemplate: '<b>%{y:.1%}</b> ' + name(k) + '<extra></extra>',
       })),
       layout: {
-        showlegend: true, hovermode: 'x unified', margin: { t: 34, r: 128 },
+        showlegend: true, hovermode: 'x unified', margin: { t: 34, r: 150 },
         xaxis: Object.assign(Viz.crosshair(t), { title: { text: 'Days ahead' }, dtick: 1, range: [0.7, 14.3] }),
         yaxis: { tickformat: '.0%', rangemode: 'tozero' },
         annotations: MODELS.map((k) => ({
@@ -323,7 +326,7 @@
     'The CTA publishes ridership with a lag, so the latest data runs to ' + fmt.date(F.origin) + '. Below is the model\'s forecast for the 14 days ' +
     'after that, using the weather each day actually had. Pick a day and change its conditions: the exported model (' + M.trees.length +
     ' trees) re-runs in your browser.';
-  el('forecast-sub').textContent = 'Last 4 weeks of actuals, then ' + fmt.date(F.days[0].date) + ' – ' + fmt.date(F.days[F.days.length - 1].date);
+  el('forecast-sub').textContent = 'Last 4 weeks of actuals, then ' + fmt.date(F.days[0].date) + ' to ' + fmt.date(F.days[F.days.length - 1].date);
 
   const forecastCard = Viz.card('card-forecast', {
     build: (t) => {
@@ -343,7 +346,7 @@
       data.push({
         x: dates, y: scenPred.map((p) => p.pred), name: 'Forecast', type: 'scatter', mode: 'lines', line: { color: blue, width: 2 },
         customdata: scenPred.map((p) => [p.lo, p.hi]),
-        hovertemplate: '<b>%{y:,.0f}</b> forecast (range %{customdata[0]:,.0f}–%{customdata[1]:,.0f})<extra></extra>',
+        hovertemplate: '<b>%{y:,.0f}</b> forecast (range %{customdata[0]:,.0f} to %{customdata[1]:,.0f})<extra></extra>',
       });
       data.push({
         x: [dates[selected]], y: [scenPred[selected].pred], type: 'scatter', mode: 'markers', showlegend: false, hoverinfo: 'skip',
@@ -393,12 +396,19 @@
     const b = basePred[selected];
     const box = el('plan-readout');
     box.textContent = '';
-    const big = document.createElement('span');
-    big.className = 'big';
-    big.textContent = fmt.int(p.pred) + ' riders';
-    box.append(big, document.createTextNode(
-      dayLabel(d.date) + ' · 80% range ' + fmt.compact(p.lo, 2) + ' – ' + fmt.compact(p.hi, 2) +
-      (Math.abs(p.pred / b.pred - 1) > 0.0005 ? ' · ' + fmt.signedPct(p.pred / b.pred - 1, 1) + ' vs. the forecast with observed conditions' : ' · forecast with observed conditions')));
+    const line = (text, cls) => {
+      const s = document.createElement('span');
+      if (cls) s.className = cls;
+      s.textContent = text;
+      return s;
+    };
+    box.append(
+      line(fmt.int(p.pred) + ' riders', 'big'),
+      line(dayLabel(d.date)),
+      line('80% range ' + fmt.compact(p.lo, 2) + ' to ' + fmt.compact(p.hi, 2)),
+      line(Math.abs(p.pred / b.pred - 1) > 0.0005
+        ? fmt.signedPct(p.pred / b.pred - 1, 1) + ' vs. the forecast with observed conditions'
+        : 'Forecast with observed conditions'));
     // Trees cannot extrapolate: snow on a warm day is a combination the model never saw.
     const x = scenX[selected];
     if (x[idx.snow_in] > 0 && x[idx.temp_mean_f] > 38) {

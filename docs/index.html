@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="en" data-theme-key="transit-theme" data-theme="dark">
+<html lang="en" data-theme-key="transit-theme" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chicago Transit Ridership Forecast</title>
   <meta name="description" content="Two-week daily ridership forecasts for the Chicago Transit Authority, built from 25 years of boardings, weather, holidays and events. Gradient boosting cuts forecast error by more than half versus planning baselines.">
   <meta name="author" content="Aarush Mehta">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1426'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='%23f2b01e' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <meta name="theme-color" content="#0a1426">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0d13'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='%23f4b522' stroke-width='3' fill='none' stroke-linecap='square'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0a0d13">
   <script>try{var r=document.documentElement,s=localStorage.getItem(r.dataset.themeKey);if(s==='light'||s==='dark')r.setAttribute('data-theme',s)}catch(e){}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500;800&display=swap">
   <link rel="stylesheet" href="assets/theme.css">
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-cartesian-dist-min@2.35.2/plotly-cartesian.min.js" defer></script>
   <script src="assets/viz.js" defer></script>
@@ -19,228 +19,264 @@
   <script src="assets/app.js" defer></script>
 </head>
 <body>
-<div class="masthead">
-<header class="site-header wrap">
-  <div class="top">
-    <div>
-      <p class="eyebrow">Data science portfolio · Time-series forecasting</p>
-      <h1>Forecasting Chicago transit ridership</h1>
-      <p class="subtitle">Daily ridership forecasts two weeks ahead for the Chicago Transit Authority (CTA). The model is built from 25 years of
-        boarding counts, daily weather, holidays and city events, and every number below is out-of-sample.</p>
-    </div>
-    <button class="theme-toggle" id="theme-toggle" type="button">Dark mode</button>
-  </div>
-  <div class="meta">
-    <span>By Aarush Mehta</span>
-    <span id="meta-dates">Loading data…</span>
-    <a href="https://github.com/mehtaaarush/transit-ridership-forecasting">Code on GitHub</a>
-    <a href="#methods">Methods</a>
+<a class="skip" href="#main">Skip to the dashboard</a>
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <span class="wordmark">CTA ridership</span>
+    <nav class="sections" aria-label="Sections">
+      <ul>
+        <li><a href="#s-history">History</a></li>
+        <li><a href="#s-patterns">Demand</a></li>
+        <li><a href="#s-accuracy">Accuracy</a></li>
+        <li><a href="#s-planner">Next 14 days</a></li>
+        <li><a href="#methods">Methods</a></li>
+      </ul>
+    </nav>
+    <button class="mode-toggle" id="theme-toggle" type="button">Dark mode</button>
   </div>
 </header>
-</div>
 
-<main class="wrap">
-  <div class="hero">
-    <div class="hero-figure">
-      <div class="label">Forecast error, gradient boosting</div>
-      <div class="value" id="hero-value">–</div>
-      <p class="caption" id="hero-caption"></p>
-    </div>
-    <div class="kpis">
-      <div class="tile" id="kpi-weekday"></div>
-      <div class="tile" id="kpi-rides"></div>
-      <div class="tile" id="kpi-recovery"></div>
-      <div class="tile" id="kpi-coverage"></div>
-    </div>
+<main id="main">
+  <div class="container intro">
+    <h1>Forecasting Chicago transit ridership</h1>
+    <p class="subtitle">Daily ridership forecasts two weeks ahead for the Chicago Transit Authority (CTA). The model is built from 25 years of
+      boarding counts, daily weather, holidays and city events, and every number below is out-of-sample.</p>
+    <ul class="byline">
+      <li>By Aarush Mehta</li>
+      <li>Time-series forecasting</li>
+      <li><span id="meta-dates">Loading data…</span></li>
+      <li><a href="https://github.com/mehtaaarush/transit-ridership-forecasting">Code on GitHub</a></li>
+      <li><a href="#methods">Methods</a></li>
+    </ul>
   </div>
 
-  <section aria-labelledby="s-history">
-    <h2 id="s-history">Twenty-five years of ridership</h2>
-    <p class="lede">The pandemic cut boardings by more than 80% in spring 2020. Ridership has grown every year since, but the recovery is uneven.
-      Weekend travel is back to about 90% of 2019 levels, while weekday commuting, the backbone of the system, has settled near 70%.</p>
-    <div class="grid two">
-      <div class="card" id="card-history">
-        <div class="card-head">
-          <div><h3>Boardings per day, weekly average</h3><p>Bus and rail, 2001–2026</p></div>
-          <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-        </div>
-        <div class="chart" id="chart-history" role="img" aria-label="Line chart of weekly average daily bus and rail boardings since 2001"></div>
-        <div class="table-view"></div>
+  <section class="board" aria-label="Headline figures">
+    <div class="container board-inner">
+      <div class="hero-figure">
+        <div class="label">Forecast error, gradient boosting</div>
+        <div class="value" id="hero-value"></div>
+        <p class="caption" id="hero-caption"></p>
       </div>
-      <div class="card" id="card-recovery">
-        <div class="card-head">
-          <div><h3>Recovery against the same month of 2019</h3><p>Average daily boardings by service day, 100% = 2019</p></div>
-          <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-        </div>
-        <div class="chart" id="chart-recovery" role="img" aria-label="Line chart of ridership as a share of 2019 by weekday, Saturday and Sunday"></div>
-        <div class="table-view"></div>
-      </div>
-    </div>
-    <div class="insights" id="insights-history"></div>
-  </section>
-
-  <section aria-labelledby="s-patterns">
-    <h2 id="s-patterns">What moves daily demand</h2>
-    <p class="lede">Each effect is measured against a "typical" day: the median of the same weekday one to three weeks either side.
-      That isolates the holiday or the weather from the weekly cycle.</p>
-    <div class="grid two">
-      <div class="card" id="card-season">
-        <div class="card-head">
-          <div><h3>Average boardings by weekday and month</h3><p>Last 24 months, holidays and events excluded</p></div>
-          <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-        </div>
-        <div class="chart" id="chart-season" role="img" aria-label="Heatmap of average boardings by weekday and month"></div>
-        <div class="table-view"></div>
-      </div>
-      <div class="card" id="card-holidays">
-        <div class="card-head">
-          <div><h3>Holidays and events</h3><p>Change vs. a typical same-weekday day, 2022–2026 average</p></div>
-          <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-        </div>
-        <div class="chart tall" id="chart-holidays" role="img" aria-label="Bar chart of ridership change on holidays and events"></div>
-        <div class="table-view"></div>
-      </div>
-    </div>
-    <div class="card" id="card-weather" style="margin-top:16px">
-      <div class="card-head">
-        <div><h3>Weather</h3><p>Median change vs. a typical same-weekday day, regular days since mid-2022</p></div>
-        <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-      </div>
-      <div class="grid three">
-        <div class="chart short" id="chart-weather-temperature" role="img" aria-label="Ridership change by temperature band"></div>
-        <div class="chart short" id="chart-weather-snow" role="img" aria-label="Ridership change by snowfall band"></div>
-        <div class="chart short" id="chart-weather-rain" role="img" aria-label="Ridership change by rainfall band"></div>
-      </div>
-      <div class="table-view"></div>
-      <p class="footnote">Bands with fewer than five days are omitted. Extreme cold is the biggest weather effect, larger than any rain band.</p>
-    </div>
-  </section>
-
-  <section aria-labelledby="s-accuracy">
-    <h2 id="s-accuracy">How accurate is the forecast?</h2>
-    <p class="lede" id="accuracy-lede">Every forecast below was made before the day happened. The model is refit each month and forecasts every day of the
-      following month at each horizon from 1 to 14 days, so nothing is scored on data it was trained on.</p>
-    <div class="controls" role="group" aria-label="Backtest view">
-      <div class="control">
-        <span id="h-label">Forecast horizon</span>
-        <div class="segmented" id="horizon-control" role="group" aria-labelledby="h-label">
-          <button type="button" data-h="1" aria-pressed="false">1 day</button>
-          <button type="button" data-h="7" aria-pressed="true">7 days</button>
-          <button type="button" data-h="14" aria-pressed="false">14 days</button>
-        </div>
-      </div>
-      <label class="control">Model
-        <select id="model-control">
-          <option value="gbm" selected>Gradient boosting</option>
-          <option value="ridge">Ridge regression</option>
-          <option value="mean4">4-week weekday mean</option>
-          <option value="naive">Seasonal naive</option>
-        </select>
-      </label>
-      <div class="readout" id="backtest-readout"></div>
-    </div>
-    <div class="card" id="card-backtest">
-      <div class="card-head">
-        <div><h3 id="backtest-title">Forecast vs. actual</h3><p id="backtest-sub"></p></div>
-        <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-      </div>
-      <div class="chart tall" id="chart-backtest" role="img" aria-label="Line chart of forecast versus actual daily boardings"></div>
-      <div class="table-view"></div>
-    </div>
-    <div class="grid two" style="margin-top:16px">
-      <div class="card" id="card-horizon">
-        <div class="card-head">
-          <div><h3>Error by forecast horizon</h3><p>WAPE across the 12-month backtest, lower is better</p></div>
-          <button class="view-toggle" type="button" aria-pressed="false">Table</button>
-        </div>
-        <div class="chart" id="chart-horizon" role="img" aria-label="Line chart of forecast error by horizon for four models"></div>
-        <div class="table-view"></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><div><h3>Model comparison</h3><p>All horizons pooled; 80% interval coverage target is 80%</p></div></div>
-        <div class="table-view" id="metrics-table" style="display:block;max-height:none;border-top:0"></div>
-        <div class="card-head" style="margin-top:14px"><div><h3>Largest misses</h3><p>Gradient boosting, 7 days ahead</p></div></div>
-        <div class="table-view" id="misses-table" style="display:block;max-height:none;border-top:0"></div>
+      <div class="kpis">
+        <div class="tile" id="kpi-weekday"></div>
+        <div class="tile" id="kpi-rides"></div>
+        <div class="tile" id="kpi-recovery"></div>
+        <div class="tile" id="kpi-coverage"></div>
       </div>
     </div>
   </section>
 
-  <section aria-labelledby="s-planner">
-    <h2 id="s-planner">The next 14 days, and a what-if planner</h2>
-    <p class="lede" id="planner-lede"></p>
-    <div class="grid two">
-      <div class="card" id="card-forecast">
+  <section class="section" aria-labelledby="s-history">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="s-history">Twenty-five years of ridership</h2>
+        <p class="lede">The pandemic cut boardings by more than 80% in spring 2020. Ridership has grown every year since, but the recovery is uneven.
+          Weekend travel is back to about 90% of 2019 levels, while weekday commuting, the backbone of the system, has settled near 70%.</p>
+      </div>
+      <div class="grid two">
+        <div class="card" id="card-history">
+          <div class="card-head">
+            <div><h3>Boardings per day, weekly average</h3><p>Bus and rail, 2001 to 2026</p></div>
+            <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+          </div>
+          <div class="chart" id="chart-history" role="img" aria-label="Line chart of weekly average daily bus and rail boardings since 2001"></div>
+          <div class="table-view"></div>
+        </div>
+        <div class="card" id="card-recovery">
+          <div class="card-head">
+            <div><h3>Recovery against the same month of 2019</h3><p>Average daily boardings by service day, 100% = 2019</p></div>
+            <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+          </div>
+          <div class="chart" id="chart-recovery" role="img" aria-label="Line chart of ridership as a share of 2019 by weekday, Saturday and Sunday"></div>
+          <div class="table-view"></div>
+        </div>
+      </div>
+      <div class="insights" id="insights-history"></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="s-patterns">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="s-patterns">What moves daily demand</h2>
+        <p class="lede">Each effect is measured against a “typical” day: the median of the same weekday one to three weeks either side.
+          That isolates the holiday or the weather from the weekly cycle.</p>
+      </div>
+      <div class="grid two">
+        <div class="card" id="card-season">
+          <div class="card-head">
+            <div><h3>Average boardings by weekday and month</h3><p>Last 24 months, holidays and events excluded</p></div>
+            <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+          </div>
+          <div class="chart" id="chart-season" role="img" aria-label="Heatmap of average boardings by weekday and month"></div>
+          <div class="table-view"></div>
+        </div>
+        <div class="card" id="card-holidays">
+          <div class="card-head">
+            <div><h3>Holidays and events</h3><p>Change vs. a typical same-weekday day, 2022 to 2026 average</p></div>
+            <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+          </div>
+          <div class="chart tall" id="chart-holidays" role="img" aria-label="Bar chart of ridership change on holidays and events"></div>
+          <div class="table-view"></div>
+        </div>
+      </div>
+      <div class="card stacked" id="card-weather">
         <div class="card-head">
-          <div><h3>Forecast with 80% range</h3><p id="forecast-sub"></p></div>
+          <div><h3>Weather</h3><p>Median change vs. a typical same-weekday day, regular days since mid-2022</p></div>
           <button class="view-toggle" type="button" aria-pressed="false">Table</button>
         </div>
-        <div class="chart tall" id="chart-forecast" role="img" aria-label="Recent daily boardings and the 14-day forecast with range"></div>
+        <div class="grid three">
+          <div class="chart short" id="chart-weather-temperature" role="img" aria-label="Ridership change by temperature band"></div>
+          <div class="chart short" id="chart-weather-snow" role="img" aria-label="Ridership change by snowfall band"></div>
+          <div class="chart short" id="chart-weather-rain" role="img" aria-label="Ridership change by rainfall band"></div>
+        </div>
         <div class="table-view"></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><div><h3>Scenario</h3><p>Change the conditions for one day; the model re-runs in your browser</p></div></div>
-        <div class="controls" style="margin-top:8px">
-          <label class="control" style="min-width:220px">Day
-            <select id="plan-day"></select>
-          </label>
-          <button type="button" class="view-toggle" id="plan-reset" style="align-self:flex-end;padding:6px 10px">Reset</button>
-        </div>
-        <div class="controls">
-          <label class="control" style="flex:1">Average temperature <output id="out-temp"></output>
-            <input type="range" id="plan-temp" min="-15" max="100" step="1">
-          </label>
-          <label class="control" style="flex:1">Rain and melted snow <output id="out-precip"></output>
-            <input type="range" id="plan-precip" min="0" max="2" step="0.05">
-          </label>
-          <label class="control" style="flex:1">Snowfall <output id="out-snow"></output>
-            <input type="range" id="plan-snow" min="0" max="12" step="0.5">
-          </label>
-        </div>
-        <div class="controls">
-          <label class="control">Holiday
-            <select id="plan-holiday">
-              <option value="none">None</option>
-              <option value="minor">Federal holiday, regular service</option>
-              <option value="major">Holiday on a Sunday schedule</option>
-            </select>
-          </label>
-          <label class="control" style="flex-direction:row;align-items:center;gap:8px;min-width:0">
-            <input type="checkbox" id="plan-event"> Major city event
-          </label>
-        </div>
-        <div class="readout" id="plan-readout" aria-live="polite"></div>
+        <p class="footnote">Bands with fewer than five days are omitted. Extreme cold is the biggest weather effect, larger than any rain band.</p>
       </div>
     </div>
   </section>
 
-  <section aria-labelledby="methods">
-    <h2 id="methods">Methods</h2>
-    <div class="methods">
-      <p><strong>Data.</strong> Daily bus and rail boardings from the City of Chicago open data portal (CTA "Daily Boarding Totals", 2001 onward),
-        joined to daily weather for the Loop from the Open-Meteo historical archive (temperature, feels-like minimum, precipitation, snowfall).</p>
-      <p><strong>Framing.</strong> Direct multi-horizon forecasting. Each training row pairs a forecast origin with a target day 1–14 days later.
-        The target is the log of target-day ridership over the origin's trailing four-week level, so the model learns shapes, not the drifting post-pandemic level.</p>
-      <p><strong>Features.</strong> Weekday, day of year, observed federal holidays (split by CTA service schedule), holiday eves, Thanksgiving weekend,
-        recurring events (Marathon, St. Patrick's parade, Pride), weather, the recent same-weekday profile and four-week momentum.</p>
-      <p><strong>Models.</strong> Two baselines (seasonal naive and a 4-week weekday mean), ridge regression with calendar dummies, and gradient-boosted trees
-        (scikit-learn, 400 trees, depth 4). Training starts July 2022.</p>
-      <p><strong>Validation.</strong> Rolling-origin backtest over the final 12 months. The models are refit monthly on data available at the time.
-        WAPE (total absolute error / total riders) is the headline metric.</p>
-      <p><strong>Uncertainty.</strong> 80% intervals come from out-of-sample residual quantiles per horizon. They are sized on a one-year inner hold-out
-        before each refit (split-conformal style) and reported with their realised coverage.</p>
-      <p><strong>Limitations.</strong> Backtests use observed weather, so a live system would add weather-forecast error. Extreme-cold days,
-        when closures are announced at short notice, and rare holiday configurations are the largest remaining misses.</p>
-      <p><strong>In the browser.</strong> The gradient-boosting model is exported tree by tree to JSON and evaluated in JavaScript for the planner.
-        A unit test holds the JavaScript output to the scikit-learn predictions.</p>
+  <section class="section" aria-labelledby="s-accuracy">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="s-accuracy">How accurate is the forecast?</h2>
+        <p class="lede" id="accuracy-lede">Every forecast below was made before the day happened. The model is refit each month and forecasts every day of the
+          following month at each horizon from 1 to 14 days, so nothing is scored on data it was trained on.</p>
+      </div>
+      <div class="controls" role="group" aria-label="Backtest view">
+        <div class="control">
+          <span id="h-label">Forecast horizon</span>
+          <div class="segmented" id="horizon-control" role="group" aria-labelledby="h-label">
+            <button type="button" data-h="1" aria-pressed="false">1 day</button>
+            <button type="button" data-h="7" aria-pressed="true">7 days</button>
+            <button type="button" data-h="14" aria-pressed="false">14 days</button>
+          </div>
+        </div>
+        <label class="control">Model
+          <select id="model-control">
+            <option value="gbm" selected>Gradient boosting</option>
+            <option value="ridge">Ridge regression</option>
+            <option value="mean4">4-week weekday mean</option>
+            <option value="naive">Seasonal naive</option>
+          </select>
+        </label>
+        <div class="readout" id="backtest-readout"></div>
+      </div>
+      <div class="card" id="card-backtest">
+        <div class="card-head">
+          <div><h3 id="backtest-title">Forecast vs. actual</h3><p id="backtest-sub"></p></div>
+          <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+        </div>
+        <div class="chart tall" id="chart-backtest" role="img" aria-label="Line chart of forecast versus actual daily boardings"></div>
+        <div class="table-view"></div>
+      </div>
+      <div class="grid two stacked">
+        <div class="card" id="card-horizon">
+          <div class="card-head">
+            <div><h3>Error by forecast horizon</h3><p>WAPE across the 12-month backtest, lower is better</p></div>
+            <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+          </div>
+          <div class="chart" id="chart-horizon" role="img" aria-label="Line chart of forecast error by horizon for four models"></div>
+          <div class="table-view"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Model comparison</h3><p>All horizons pooled; 80% interval coverage target is 80%</p></div></div>
+          <div class="table-view table-static" id="metrics-table"></div>
+          <div class="card-head sub-head"><div><h3>Largest misses</h3><p>Gradient boosting, 7 days ahead</p></div></div>
+          <div class="table-view table-static" id="misses-table"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="s-planner">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="s-planner">The next 14 days, and a what-if planner</h2>
+        <p class="lede" id="planner-lede"></p>
+      </div>
+      <div class="grid two">
+        <div class="card" id="card-forecast">
+          <div class="card-head">
+            <div><h3>Forecast with 80% range</h3><p id="forecast-sub"></p></div>
+            <button class="view-toggle" type="button" aria-pressed="false">Table</button>
+          </div>
+          <div class="chart tall" id="chart-forecast" role="img" aria-label="Recent daily boardings and the 14-day forecast with range"></div>
+          <div class="table-view"></div>
+        </div>
+        <div class="card planner">
+          <div class="card-head"><div><h3>Scenario</h3><p>Change the conditions for one day; the model re-runs in your browser</p></div></div>
+          <div class="controls">
+            <label class="control control-day">Day
+              <select id="plan-day"></select>
+            </label>
+            <button type="button" class="btn" id="plan-reset">Reset</button>
+          </div>
+          <div class="controls sliders">
+            <label class="control">Average temperature <output id="out-temp"></output>
+              <input type="range" id="plan-temp" min="-15" max="100" step="1">
+            </label>
+            <label class="control">Rain and melted snow <output id="out-precip"></output>
+              <input type="range" id="plan-precip" min="0" max="2" step="0.05">
+            </label>
+            <label class="control">Snowfall <output id="out-snow"></output>
+              <input type="range" id="plan-snow" min="0" max="12" step="0.5">
+            </label>
+          </div>
+          <div class="controls">
+            <label class="control">Holiday
+              <select id="plan-holiday">
+                <option value="none">None</option>
+                <option value="minor">Federal holiday, regular service</option>
+                <option value="major">Holiday on a Sunday schedule</option>
+              </select>
+            </label>
+            <label class="control check">
+              <input type="checkbox" id="plan-event"> Major city event
+            </label>
+          </div>
+          <div class="readout plan" id="plan-readout" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="methods">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="methods">Methods</h2>
+      </div>
+      <div class="methods">
+        <p><strong>Data.</strong> Daily bus and rail boardings from the City of Chicago open data portal (CTA “Daily Boarding Totals”, 2001 onward),
+          joined to daily weather for the Loop from the Open-Meteo historical archive (temperature, feels-like minimum, precipitation, snowfall).</p>
+        <p><strong>Framing.</strong> Direct multi-horizon forecasting. Each training row pairs a forecast origin with a target day 1 to 14 days later.
+          The target is the log of target-day ridership over the origin’s trailing four-week level, so the model learns shapes, not the drifting post-pandemic level.</p>
+        <p><strong>Features.</strong> Weekday, day of year, observed federal holidays (split by CTA service schedule), holiday eves, Thanksgiving weekend,
+          recurring events (Marathon, St. Patrick’s parade, Pride), weather, the recent same-weekday profile and four-week momentum.</p>
+        <p><strong>Models.</strong> Two baselines (seasonal naive and a 4-week weekday mean), ridge regression with calendar dummies, and gradient-boosted trees
+          (scikit-learn, 400 trees, depth 4). Training starts July 2022.</p>
+        <p><strong>Validation.</strong> Rolling-origin backtest over the final 12 months. The models are refit monthly on data available at the time.
+          WAPE (total absolute error / total riders) is the headline metric.</p>
+        <p><strong>Uncertainty.</strong> 80% intervals come from out-of-sample residual quantiles per horizon. They are sized on a one-year inner hold-out
+          before each refit (split-conformal style) and reported with their realised coverage.</p>
+        <p><strong>Limitations.</strong> Backtests use observed weather, so a live system would add weather-forecast error. Extreme-cold days,
+          when closures are announced at short notice, and rare holiday configurations are the largest remaining misses.</p>
+        <p><strong>In the browser.</strong> The gradient-boosting model is exported tree by tree to JSON and evaluated in JavaScript for the planner.
+          A unit test holds the JavaScript output to the scikit-learn predictions.</p>
+      </div>
     </div>
   </section>
 </main>
 
 <footer class="site-footer">
-  <div class="wrap">
-    Data: <a href="https://data.cityofchicago.org/Transportation/CTA-Ridership-Daily-Boarding-Totals/6iiy-9s97">City of Chicago, CTA Daily Boarding Totals</a> ·
-    Weather: <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0) ·
-    Built by Aarush Mehta · <a href="https://github.com/mehtaaarush/transit-ridership-forecasting">Source code</a> (MIT)
+  <div class="container">
+    <dl class="credits">
+      <div><dt>Data</dt><dd>City of Chicago, <a href="https://data.cityofchicago.org/Transportation/CTA-Ridership-Daily-Boarding-Totals/6iiy-9s97">CTA Daily Boarding Totals</a></dd></div>
+      <div><dt>Weather</dt><dd><a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0)</dd></div>
+      <div><dt>Built by</dt><dd>Aarush Mehta, data science portfolio</dd></div>
+      <div><dt>Licence</dt><dd><a href="https://github.com/mehtaaarush/transit-ridership-forecasting">Source code</a> under MIT</dd></div>
+    </dl>
   </div>
 </footer>
 </body>
